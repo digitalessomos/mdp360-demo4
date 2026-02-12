@@ -450,33 +450,22 @@
                             class="text-[11px] text-emerald-500/80 font-mono uppercase tracking-tighter font-bold">
                             CONECTANDO...</p>
                     </div>
-                    <!-- Logout button relocated for safety -->
-                    <button id="logoutBtn" class="ml-2 p-2 text-slate-600 hover:text-red-500 transition-all rounded-full hover:bg-red-500/10" title="Cerrar Sesión">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="logoutBtn-quick" class="p-2 text-slate-600 hover:text-red-500 transition-all rounded-full hover:bg-red-500/10 hidden" title="Cerrar Sesión">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-center md:justify-end gap-2">
-
+            <div class="flex items-center gap-4">
                 <button id="start-demo-btn"
-                    class="header-icon-btn bg-emerald-600 text-white font-black shadow-lg hover:bg-emerald-500">
-                    <i class="fas fa-terminal text-lg"></i><span class="btn-label">ACTIVAR TERMINAL</span>
+                    class="p-2 px-3 bg-emerald-600/10 text-emerald-500 border border-emerald-500/20 rounded-lg font-bold text-[10px] hover:bg-emerald-600 hover:text-white transition-all">
+                    <i class="fas fa-terminal mr-2"></i>LOGS
                 </button>
-                <button id="open-staff-modal-btn"
-                    class="header-icon-btn glass-panel text-slate-300 font-bold hover:bg-slate-700">
-                    <i class="fas fa-users text-emerald-500 text-lg"></i><span class="btn-label">FLOTA</span>
+                <button id="burger-menu-btn" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-all shadow-lg active:scale-95">
+                    <i class="fas fa-bars text-xl"></i>
                 </button>
-                <button id="open-history-modal-btn"
-                    class="header-icon-btn bg-violet-600/20 text-violet-400 font-bold border border-violet-500/30 hover:bg-violet-600/30">
-                    <i class="fas fa-brain text-lg"></i><span class="btn-label">REPORTES</span>
-                </button>
-                <button id="theme-toggle"
-                    class="header-icon-btn glass-panel text-slate-300 font-bold hover:bg-slate-700">
-                    <i class="fas fa-sun text-amber-500 text-lg"></i><span id="theme-text" class="btn-label">MODO
-                        CLARO</span>
-                </button>
-
             </div>
         </header>
 
@@ -575,6 +564,42 @@
                 <button id="download-pdf-btn"
                     class="bg-violet-600 text-white px-8 py-3 rounded-xl font-black text-[9px] uppercase shadow-xl">Generar
                     Reporte PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menú Lateral (Burger) -->
+    <div id="side-menu-overlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[100] hidden opacity-0 transition-opacity duration-300"></div>
+    <div id="side-menu" class="fixed right-0 top-0 h-full w-80 glass-panel border-l border-white/5 z-[101] translate-x-full transition-transform duration-300 p-8 flex flex-col gap-8 shadow-2xl">
+        <div class="flex items-center justify-between">
+            <div class="flex flex-col">
+                <h2 class="text-xl font-black text-white uppercase tracking-tighter">Panel Maestro</h2>
+                <div class="h-1 w-12 bg-emerald-500 rounded-full mt-1"></div>
+            </div>
+            <button id="close-side-menu" class="p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="flex flex-col gap-4">
+            <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-2">Operaciones Estratégicas</p>
+            <button id="open-staff-modal-btn" class="flex items-center w-full p-4 rounded-2xl font-bold text-sm transition-all duration-200 bg-white/5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 border border-white/5">
+                <i class="fas fa-users w-8 text-emerald-500"></i> Gestión de Flota
+            </button>
+            <button id="open-history-modal-btn" class="flex items-center w-full p-4 rounded-2xl font-bold text-sm transition-all duration-200 bg-white/5 text-slate-300 hover:bg-violet-500/10 hover:text-violet-400 border border-white/5">
+                <i class="fas fa-brain w-8 text-violet-500"></i> Reportes & Auditoría
+            </button>
+            <button id="theme-toggle" class="flex items-center w-full p-4 rounded-2xl font-bold text-sm transition-all duration-200 bg-white/5 text-slate-300 hover:bg-amber-500/10 hover:text-amber-400 border border-white/5">
+                <i id="theme-icon" class="fas fa-sun w-8 text-amber-500"></i> <span id="theme-text">Cambiar Tema</span>
+            </button>
+        </div>
+
+        <div class="mt-auto">
+            <div class="bg-red-500/5 rounded-2xl p-4 border border-red-500/10">
+                <p class="text-[10px] text-red-400/50 font-black uppercase tracking-[0.2em] mb-4">Seguridad de Acceso</p>
+                <button id="logoutBtn" class="flex items-center justify-center w-full p-4 rounded-xl font-black text-xs uppercase transition-all duration-200 bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20 active:scale-95">
+                    <i class="fas fa-sign-out-alt mr-3"></i> Cerrar Sesión Segura
+                </button>
             </div>
         </div>
     </div>

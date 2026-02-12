@@ -90,8 +90,6 @@ const init = async () => {
                 loadingScreen.style.opacity = '0';
                 setTimeout(() => loadingScreen.style.display = 'none', 500);
             }
-            document.getElementById('kanban-container')?.classList.remove('hidden');
-            document.getElementById('ops-panel')?.classList.remove('hidden');
         } else {
             // No user, redirect to login if not already there
             const urls = getURLs();
@@ -171,10 +169,26 @@ window.onload = () => {
     };
 
     document.getElementById('start-demo-btn').onclick = () => {
-        document.getElementById('ops-panel').classList.remove('hidden');
-        document.getElementById('kanban-container').classList.remove('hidden');
-        document.getElementById('start-demo-btn').innerHTML = '<i class="fas fa-check-circle"></i><span class="btn-label">TERMINAL</span>';
-        uiManager.renderApp(window.AppState.data, handlers);
+        const opsPanel = document.getElementById('ops-panel');
+        const kanban = document.getElementById('kanban-container');
+        const btn = document.getElementById('start-demo-btn');
+        
+        const isHidden = opsPanel.classList.contains('hidden');
+        
+        if (isHidden) {
+            opsPanel.classList.remove('hidden');
+            kanban.classList.remove('hidden');
+            btn.innerHTML = '<i class="fas fa-power-off mr-2"></i>DESACTIVAR';
+            btn.classList.add('bg-red-600', 'hover:bg-red-500');
+            btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+            uiManager.renderApp(window.AppState.data, handlers);
+        } else {
+            opsPanel.classList.add('hidden');
+            kanban.classList.add('hidden');
+            btn.innerHTML = '<i class="fas fa-terminal mr-2"></i>ACTIVAR';
+            btn.classList.remove('bg-red-600', 'hover:bg-red-500');
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        }
     };
 
     // Modal Listeners
@@ -182,6 +196,40 @@ window.onload = () => {
         const modal = document.getElementById(id);
         if (modal) modal.style.display = show ? 'flex' : 'none';
     };
+
+    // Side Menu (Burger) Listeners
+    const sideMenu = document.getElementById('side-menu');
+    const sideOverlay = document.getElementById('side-menu-overlay');
+
+    const togSideMenu = (show) => {
+        if (!sideMenu || !sideOverlay) return;
+        if (show) {
+            sideOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                sideOverlay.style.opacity = '1';
+                sideMenu.classList.remove('translate-x-full');
+            }, 10);
+        } else {
+            sideOverlay.style.opacity = '0';
+            sideMenu.classList.add('translate-x-full');
+            setTimeout(() => {
+                sideOverlay.classList.add('hidden');
+            }, 300);
+        }
+    };
+
+    document.getElementById('burger-menu-btn').onclick = () => togSideMenu(true);
+    document.getElementById('close-side-menu').onclick = () => togSideMenu(false);
+    sideOverlay.onclick = () => togSideMenu(false);
+
+    // Cerrar menú al hacer click en cualquier opción dentro
+    sideMenu.querySelectorAll('button').forEach(btn => {
+        const oldClick = btn.onclick;
+        btn.onclick = (e) => {
+            if (oldClick) oldClick(e);
+            if (btn.id !== 'logoutBtn') togSideMenu(false); // No cerramos si es logout para ver la confirmación
+        };
+    });
 
     document.getElementById('open-staff-modal-btn').onclick = () => {
         uiManager.renderStaffListModal(window.AppState.data.staff, handlers.onUpdateStaff, window.AppState.data.userRole);
@@ -222,7 +270,11 @@ window.onload = () => {
         uiManager.generatePDFReport(window.AppState.data.orders, window.AppState.data.staff);
     };
 
-    document.getElementById('logoutBtn').onclick = () => handlers.onSignOut();
+    document.getElementById('logoutBtn').onclick = () => {
+        if (confirm("¿Estás seguro de que deseas cerrar sesión? Detendrás la sincronización en tiempo real.")) {
+            handlers.onSignOut();
+        }
+    };
 
     // Loading screen fade out - handled in onAuthChange
     /*
