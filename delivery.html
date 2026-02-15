@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Repartidor PRO - RutaTotal 360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
+
+        :root {
+            --bg-main: #0f172a;
+            --bg-glass: rgba(30, 41, 59, 0.7);
+            --accent-emerald: #10b981;
+            --accent-cyan: #06b6d4;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent 40%);
+        }
+
+        .glass-header {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .driver-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .orders-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            max-width: 450px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Estilos de Tarjeta de Pedido Premium */
+        .order-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            color: #1e293b;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            border-left: 6px solid #1e293b;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .order-card:active {
+            transform: scale(0.98);
+        }
+
+        .order-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, transparent 50%, rgba(15, 23, 42, 0.03) 50%);
+        }
+
+        /* Animaciones */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Modales Premium */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .modal-content {
+            background: #1e293b;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 2rem;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .incident-opt {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-align: left;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .incident-opt:active {
+            background: #ef4444;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .font-mono-premium {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading-screen">
+        <div class="relative w-16 h-16 mb-6">
+            <div class="absolute inset-0 border-4 border-emerald-500/20 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-t-emerald-500 rounded-full animate-spin"></div>
+        </div>
+        <p class="text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Ruta...</p>
+    </div>
+
+    <header class="glass-header flex justify-between items-center">
+        <div class="driver-card">
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                <i class="fas fa-motorcycle text-xs"></i>
+            </div>
+            <div id="driver-name-display" class="font-black text-sm uppercase tracking-tighter text-emerald-400">Cargando...</div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="qr-pay-btn" class="w-10 h-10 flex items-center justify-center text-emerald-500 hover:text-emerald-400 transition-colors bg-emerald-500/10 rounded-full" title="Mostrar QR de Pago">
+                <i class="fas fa-qrcode"></i>
+            </button>
+            <button id="logout-btn" class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors bg-white/5 rounded-full">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <main id="orders-list" class="orders-container">
+        <!-- Tarjetas de pedidos se cargarán dinámicamente -->
+    </main>
+
+    <!-- Modal de Incidencias -->
+    <div id="incident-modal" class="modal">
+        <div class="modal-content animate-slide-up">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-exclamation-triangle text-red-500"></i>
+                </div>
+                <p class="text-[9px] font-black text-red-500/60 uppercase tracking-widest mb-1">Centro de Notificaciones</p>
+                <h3 id="modal-ticket-id" class="text-3xl font-black text-white font-mono-premium tracking-tighter">#0</h3>
+            </div>
+            <div id="incident-options">
+                <button class="incident-opt" data-opt="No atiende timbre ni tel.">No atiende timbre ni tel, avisale</button>
+                <button class="incident-opt" data-opt="No aparece la altura">No aparece la altura, llamalo</button>
+                <button class="incident-opt" data-opt="Tarda mucho">Tarda mucho, dile que salga</button> 
+                <button class="incident-opt" data-opt="Dirección incorrecta">Dirección incorrecta, llamalo</button>
+            </div>
+            <button id="close-modal" class="w-full p-4 text-[10px] font-black text-slate-500 uppercase mt-2 hover:text-white transition-colors">Cerrar Panel</button>
+        </div>
+    </div>
+
+    <!-- Modal de QR de Pago -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content animate-slide-up max-w-[320px]">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-qrcode text-emerald-500"></i>
+                </div>
+                <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Muestra este código al cliente</p>
+                <h3 class="text-xl font-black text-white uppercase tracking-tighter">QR de Pago Local</h3>
+            </div>
+            
+            <div class="bg-white p-3 rounded-2xl shadow-inner mb-6 flex justify-center items-center aspect-square overflow-hidden">
+                <img src="https://via.placeholder.com/300?text=QR+LOCAL" alt="Cobro QR" class="w-full h-auto rounded-lg">
+            </div>
+
+            <button id="close-qr-modal" class="w-full p-4 text-[10px] font-black text-slate-500 uppercase hover:text-white transition-colors">Volver</button>
+        </div>
+    </div>
+
+    <script type="module" src="./src/delivery.js"></script>
+</body>
+
+</html>

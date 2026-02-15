@@ -92,11 +92,24 @@
             }
 
             try {
-                const staffData = await authService.loginWithPIN(pin);
-                localStorage.setItem('rutatotal_role', 'operativo');
+                // 1. Validamos el PIN usando la instancia 'DeliveryApp'. 
+                // Esto NO cierra la sesión de Admin (Google Auth) en la app principal.
+                const staffData = await authService.loginWithPIN(pin, true);
+                const role = staffData.role || 'operativo';
+                
+                localStorage.setItem('rutatotal_role', role);
                 localStorage.setItem('rutatotal_staff_name', staffData.name || 'Operario');
-                window.location.href = URLs.app + '?role=operativo';
+
+                if (role === 'repartidor') {
+                    // Ya está autenticado en la instancia de Delivery, redirigimos
+                    window.location.href = URLs.delivery;
+                } else {
+                    // Si es operativo, necesita sesión en la app default (app.html)
+                    await authService.loginWithPIN(pin, false);
+                    window.location.href = URLs.app + '?role=' + role;
+                }
             } catch (e) {
+                console.error("Login Error:", e);
                 showError("Acceso denegado: PIN incorrecto");
             }
         };

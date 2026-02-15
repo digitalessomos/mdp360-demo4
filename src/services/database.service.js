@@ -1,8 +1,23 @@
-import { auth, db, APP_ID } from '../config/firebase.config.js';
-import { doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { auth as adminAuth, db as adminDb, APP_ID, getDeliveryApp } from '../config/firebase.config.js';
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Helper interno para obtener las instancias activas (Admin o Delivery)
+const getContext = () => {
+    if (adminAuth.currentUser) {
+        return { auth: adminAuth, db: adminDb };
+    }
+    const deliveryApp = getDeliveryApp();
+    const deliveryAuth = getAuth(deliveryApp);
+    if (deliveryAuth.currentUser) {
+        return { auth: deliveryAuth, db: getFirestore(deliveryApp) };
+    }
+    return { auth: adminAuth, db: adminDb };
+};
 
 export const databaseService = {
     subscribeToOrders(callback) {
+        const { auth, db } = getContext();
         if (!auth.currentUser) {
             console.warn("Attempted to subscribe to orders without authentication.");
             return () => {};
@@ -18,6 +33,7 @@ export const databaseService = {
     },
 
     subscribeToStaff(callback) {
+        const { auth, db } = getContext();
         if (!auth.currentUser) {
             console.warn("Attempted to subscribe to staff without authentication.");
             return () => {};
@@ -35,6 +51,7 @@ export const databaseService = {
     },
 
     async createOrder(id, repartidor = null) {
+        const { db } = getContext();
         const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
         const newOrder = {
             id: parseInt(id),
@@ -48,6 +65,7 @@ export const databaseService = {
     },
 
     async assignOrder(id, repartidor) {
+        const { db } = getContext();
         const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
         await updateDoc(orderRef, {
             repartidor: repartidor || null,
@@ -56,25 +74,49 @@ export const databaseService = {
         });
     },
 
+    async reportIncident(id, text) {
+        const { db } = getContext();
+        const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
+        await updateDoc(orderRef, {
+            incident: text,
+            incidentTime: Date.now(),
+            response: null
+        });
+    },
+
+    async respondToIncident(id, text) {
+        const { db } = getContext();
+        const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
+        await updateDoc(orderRef, {
+            response: text,
+            responseTime: Date.now()
+        });
+    },
+
     async finalizeOrder(id) {
+        const { db } = getContext();
         const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
         await updateDoc(orderRef, {
             status: 'entregado',
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            deliveredAt: serverTimestamp()
         });
     },
 
     async deleteOrder(id) {
+        const { db } = getContext();
         const orderRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
         await deleteDoc(orderRef);
     },
 
     async updateStaff(newList) {
+        const { db } = getContext();
         const configRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'config', 'staff');
         await setDoc(configRef, { list: newList });
     },
 
     async archiveAndClearAllOrders(orders) {
+        const { db } = getContext();
         if (!orders || Object.keys(orders).length === 0) return;
 
         const batch = writeBatch(db);
@@ -82,7 +124,6 @@ export const databaseService = {
         const monthId = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
         
         Object.entries(orders).forEach(([id, data]) => {
-            // 1. Preparar copia en el archivo
             const archiveRef = doc(db, 'artifacts', APP_ID, 'archive', monthId, 'orders', id.toString());
             batch.set(archiveRef, {
                 ...data,
@@ -90,7 +131,6 @@ export const databaseService = {
                 archiveMonth: monthId
             });
 
-            // 2. Preparar eliminación de la colección activa
             const activeRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'orders', id.toString());
             batch.delete(activeRef);
         });

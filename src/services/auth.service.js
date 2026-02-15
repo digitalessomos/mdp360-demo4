@@ -1,5 +1,6 @@
-import { auth, db } from '../config/firebase.config.js';
+import { auth, db, getDeliveryApp } from '../config/firebase.config.js';
 import { 
+    getAuth,
     signInAnonymously, 
     onAuthStateChanged, 
     signOut, 
@@ -7,6 +8,7 @@ import {
     signInWithPopup 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
+    getFirestore,
     doc, 
     getDoc, 
     collection, 
@@ -18,13 +20,15 @@ import {
 const googleProvider = new GoogleAuthProvider();
 
 export const authService = {
-    async loginAnonymously() {
-        try {
-            return await signInAnonymously(auth);
-        } catch (error) {
-            console.error("Auth Error:", error);
-            throw error;
-        }
+    // Helpers para obtener las instancias correctas
+    getAuthInstance(useDelivery = false) {
+        if (!useDelivery) return auth;
+        return getAuth(getDeliveryApp());
+    },
+
+    getDbInstance(useDelivery = false) {
+        if (!useDelivery) return db;
+        return getFirestore(getDeliveryApp());
     },
 
     async loginWithGoogle() {
@@ -37,24 +41,33 @@ export const authService = {
         }
     },
 
-    async loginWithPIN(pin) {
+    async loginWithPIN(pin, useDelivery = false) {
         if (!pin) throw new Error("PIN requerido");
+        
+        const targetAuth = this.getAuthInstance(useDelivery);
+        const targetDb = this.getDbInstance(useDelivery);
+
         try {
             // 1. Autenticación anónima para cumplir con las reglas de Firebase
-            await signInAnonymously(auth);
+            await signInAnonymously(targetAuth);
 
             // 2. BUSQUEDA: Buscar el documento donde el campo 'pin' sea igual al ingresado
-            const staffRef = collection(db, 'staff_access');
+            const staffRef = collection(targetDb, 'staff_access');
             const q = query(staffRef, where("pin", "==", pin));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                const staffData = querySnapshot.docs[0].data();
-                // Aseguramos que el rol sea operativo para aplicar las restricciones
-                return { ...staffData, role: 'operativo' };
+                const docSnap = querySnapshot.docs[0];
+                const staffData = docSnap.data();
+                return { 
+                    ...staffData, 
+                    id: docSnap.id,
+                    role: staffData.role || 'operativo',
+                    name: (staffData.name || '').trim() || docSnap.id
+                };
             } else {
                 // Si el PIN no es válido, cerramos la sesión anónima
-                await signOut(auth);
+                await signOut(targetAuth);
                 throw new Error("PIN incorrecto");
             }
         } catch (error) {
@@ -78,15 +91,18 @@ export const authService = {
         }
     },
 
-    onAuthChange(callback) {
-        return onAuthStateChanged(auth, callback);
+    onAuthChange(callback, useDelivery = false) {
+        const targetAuth = this.getAuthInstance(useDelivery);
+        return onAuthStateChanged(targetAuth, callback);
     },
 
-    async logout() {
-        return await signOut(auth);
+    async logout(useDelivery = false) {
+        const targetAuth = this.getAuthInstance(useDelivery);
+        return await signOut(targetAuth);
     },
 
-    getCurrentUser() {
-        return auth.currentUser;
+    getCurrentUser(useDelivery = false) {
+        const targetAuth = this.getAuthInstance(useDelivery);
+        return targetAuth.currentUser;
     }
 };

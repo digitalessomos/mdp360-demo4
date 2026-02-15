@@ -6,12 +6,14 @@ export const getURLs = () => {
     if (isLocal) {
         return {
             app: 'app.html',
-            login: 'index.html'
+            login: 'index.html',
+            delivery: 'delivery.html'
         };
     } else {
         return {
             app: '/app.html',
-            login: '/index.html'
+            login: '/index.html',
+            delivery: '/delivery.html'
         };
     }
 };

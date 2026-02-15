@@ -98,6 +98,24 @@ export const uiManager = {
                 `</div>`;
         }
 
+        let incidentArea = '';
+        if (o.incident) {
+            incidentArea = `
+                <div class="bg-red-500/10 border border-red-500/20 p-2 rounded-lg mt-2 animate-pulse">
+                    <p class="text-[9px] text-red-500 font-black uppercase">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>INCIDENCIA: ${o.incident}
+                    </p>
+                    ${o.response ? `
+                        <div class="mt-1 pt-1 border-t border-red-500/10">
+                            <p class="text-[8px] text-emerald-500 font-bold uppercase">R: ${o.response}</p>
+                        </div>
+                    ` : `
+                        <button class="respond-incident-btn mt-2 w-full py-1.5 bg-red-500 text-white text-[8px] font-black uppercase rounded shadow-lg">Responder</button>
+                    `}
+                </div>
+            `;
+        }
+
         return `
             <div class="flex justify-between items-start">
                 <div class="flex flex-col">
@@ -110,6 +128,7 @@ export const uiManager = {
                     ${isAssigned ? '' : '<span class="text-[9px] block text-slate-400 mt-1">Control local</span>'}
                 </div>
             </div>
+            ${incidentArea}
             <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-800/50">
                     <div class="flex-grow">${actionArea}</div>
                     <button class="delete-order-btn p-3 text-slate-600 hover:text-red-500 transition hover:bg-red-500/10 rounded-lg ml-2"><i class="fas fa-trash-alt text-lg"></i></button>
@@ -123,6 +142,11 @@ export const uiManager = {
         card.ontouchstart = (e) => this.handleTouchStart(e, card, o.id);
         card.ontouchmove = (e) => this.handleTouchMove(e);
         card.ontouchend = (e) => this.handleTouchEnd(e, card, o.id, handlers);
+
+        const respBtn = card.querySelector('.respond-incident-btn');
+        if (respBtn) respBtn.onclick = () => {
+            this.showIncidentResponseMenu(o.id, handlers, o.repartidor);
+        };
 
         const delBtn = card.querySelector('.delete-order-btn');
         if (delBtn) delBtn.onclick = () => confirm(`¿Eliminar #${o.id}?`) && handlers.onDeleteOrder(o.id);
@@ -314,6 +338,26 @@ export const uiManager = {
 
         document.getElementById('cancel-quick-assign').onclick = () => menu.remove();
         menu.onclick = (e) => { if (e.target === menu) menu.remove(); };
+    },
+
+    showIncidentResponseMenu(id, handlers, repartidor) {
+        const modal = document.getElementById('incidentResponseModal');
+        if (!modal) return;
+
+        document.getElementById('resp-modal-ticket-id').textContent = `#${id}`;
+        modal.style.display = 'flex';
+
+        const options = modal.querySelectorAll('.incident-resp-opt');
+        options.forEach(btn => {
+            btn.onclick = () => {
+                const text = btn.getAttribute('data-text');
+                handlers.onRespondIncident(id, text);
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('close-resp-modal').onclick = () => modal.style.display = 'none';
+        modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
     },
 
     slideNumbers(d, state) {

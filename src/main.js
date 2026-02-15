@@ -29,6 +29,7 @@ const handlers = {
         }
         return databaseService.deleteOrder(id).then(() => uiManager.playSound("A2"));
     },
+    onRespondIncident: (id, text) => databaseService.respondToIncident(id, text).then(() => uiManager.playSound("D4")),
     onUpdateStaff: (list) => {
         if (window.AppState.data.userRole !== 'admin') {
             console.warn("Acción denegada: Solo administradores pueden gestionar la flota.");
