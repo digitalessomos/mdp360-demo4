@@ -6,6 +6,7 @@ import { getURLs } from './config/urls.js';
 let currentUser = null;
 let currentStaffName = null;
 let activeTicketId = null;
+const lastSeenResponses = {}; // Rastreo para evitar repetición de alertas
 
 const init = async () => {
     const loadingScreen = document.getElementById('loading-screen');
@@ -25,8 +26,9 @@ const init = async () => {
 
             if (driverDisplay) driverDisplay.textContent = currentStaffName;
 
-            // Suscribirse a los pedidos (La suscripción de databaseService usa el auth actual)
+            // Suscribirse a los pedidos
             databaseService.subscribeToOrders((orders) => {
+                checkNewResponses(orders);
                 renderOrders(orders);
                 if (loadingScreen && loadingScreen.style.display !== 'none') {
                     loadingScreen.style.opacity = '0';
@@ -195,6 +197,47 @@ const playSound = (f) => {
     } catch (e) {
         console.warn("Audio Context Error:", e);
     }
+};
+
+const playUrgentAlert = () => {
+    try {
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        if (Tone.context.state !== 'running') Tone.start();
+        
+        // Secuencia urgente: C5 -> G4 -> C5
+        const now = Tone.now();
+        synth.triggerAttackRelease("C5", "16n", now);
+        synth.triggerAttackRelease("G4", "16n", now + 0.1);
+        synth.triggerAttackRelease("C5", "16n", now + 0.2);
+
+        // Vibración (si el dispositivo lo permite)
+        if ("vibrate" in navigator) {
+            navigator.vibrate([200, 100, 200]);
+        }
+    } catch (e) {
+        console.warn("Urgent Alert Error:", e);
+    }
+};
+
+const checkNewResponses = (orders) => {
+    Object.values(orders).forEach(o => {
+        // Solo nos interesan pedidos asignados a este repartidor con una respuesta nueva
+        const isMyOrder = (o.repartidor || '').toLowerCase().trim() === (currentStaffName || '').toLowerCase().trim();
+        
+        if (isMyOrder && o.response) {
+            const orderId = o.id.toString();
+            const lastResponse = lastSeenResponses[orderId];
+
+            // Si hay una respuesta y es distinta a la última que vimos, disparamos alerta
+            if (lastResponse !== o.response) {
+                lastSeenResponses[orderId] = o.response;
+                // Solo alertar si no es la carga inicial (donde lastResponse sería undefined)
+                if (lastResponse !== undefined) {
+                    playUrgentAlert();
+                }
+            }
+        }
+    });
 };
 
 // Solo inicializar si estamos en la vista de delivery
