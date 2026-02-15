@@ -122,7 +122,7 @@ const renderOrders = (orders) => {
 
     sortedOrders.forEach(o => {
         const card = document.createElement('div');
-        card.className = 'order-card animate-slide-up';
+        card.className = 'order-card animate-slide-up collapsed'; // Por defecto colapsado
 
         let incidentContent = '';
         if (o.incident) {
@@ -143,7 +143,7 @@ const renderOrders = (orders) => {
         }
 
         card.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
+            <div class="flex justify-between items-start">
                 <div class="flex flex-col">
                     <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Orden de Entrega</span>
                     <span class="text-4xl font-black text-slate-800 font-mono tracking-tighter">#${o.id}</span>
@@ -156,17 +156,36 @@ const renderOrders = (orders) => {
                 </div>
             </div>
             
-            ${incidentContent}
+            <div class="action-area">
+                ${incidentContent}
+                <div class="flex gap-2 pt-2">
+                    <button class="finalize-btn flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl uppercase text-xs tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
+                        Confirmar Entrega
+                    </button>
+                    <button class="report-btn w-14 h-14 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all" title="Reportar Incidencia">
+                        <i class="fas fa-comment-dots text-xl"></i>
+                    </button>
+                </div>
+            </div>
 
-            <div class="flex gap-2 mt-2 pt-4 border-t border-slate-100">
-                <button class="finalize-btn flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl uppercase text-xs tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
-                    Confirmar Entrega
-                </button>
-                <button class="report-btn w-14 h-14 flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all" title="Reportar Incidencia">
-                    <i class="fas fa-comment-dots text-xl"></i>
-                </button>
+            <div class="expand-indicator">
+                <i class="fas fa-chevron-down"></i>
             </div>
         `;
+
+        // Lógica de Acordeón: Expandir/Colapsar al tocar la tarjeta
+        card.onclick = (e) => {
+            // No expandir si el usuario tocó un botón de acción
+            if (e.target.closest('button')) return;
+
+            // Auto-acordeón: Cerramos los demás antes de abrir este
+            const isAlreadyOpen = !card.classList.contains('collapsed');
+            document.querySelectorAll('.order-card').forEach(c => c.classList.add('collapsed'));
+            
+            if (!isAlreadyOpen) {
+                card.classList.remove('collapsed');
+            }
+        };
 
         // Eventos
         card.querySelector('.finalize-btn').onclick = () => {
@@ -210,14 +229,33 @@ const playUrgentAlert = () => {
         synth.triggerAttackRelease("G4", "16n", now + 0.1);
         synth.triggerAttackRelease("C5", "16n", now + 0.2);
 
-        // Vibración (si el dispositivo lo permite)
+        // Intento de vibración con patrón alternativo para mejor compatibilidad
         if ("vibrate" in navigator) {
-            navigator.vibrate([200, 100, 200]);
+            console.log("Intentando vibración urgente...");
+            // Patrón corto y repetitivo suele ser más compatible
+            navigator.vibrate([200, 100, 200, 100, 200]);
         }
     } catch (e) {
         console.warn("Urgent Alert Error:", e);
     }
 };
+
+// Habilitar Vibración y Sonido tras la primera interacción (Requerido por móviles)
+const enableHaptics = () => {
+    try {
+        if ("vibrate" in navigator) {
+            navigator.vibrate(50); // Vibración mínima de "despertar"
+        }
+        if (Tone.context.state !== 'running') {
+            Tone.start();
+        }
+        console.log("Haptics habilitados tras interacción del usuario");
+        window.removeEventListener('click', enableHaptics);
+        window.removeEventListener('touchstart', enableHaptics);
+    } catch (e) {}
+};
+window.addEventListener('click', enableHaptics);
+window.addEventListener('touchstart', enableHaptics);
 
 const checkNewResponses = (orders) => {
     Object.values(orders).forEach(o => {
